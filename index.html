@@ -1,0 +1,75 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>銷貨單產生器</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>銷貨單產生器</h1>
+
+    <section class="card">
+      <h2>主頁面資料填寫</h2>
+      <form id="order-form" novalidate>
+        <div class="grid">
+          <label>
+            日期
+            <input id="order-date" name="orderDate" type="date" required />
+          </label>
+
+          <label>
+            店名
+            <select id="store-select" name="store" required>
+              <option value="">請選擇店名</option>
+            </select>
+          </label>
+
+          <label class="col-2">
+            送貨地址
+            <input id="delivery-address" name="deliveryAddress" type="text" required />
+          </label>
+
+          <label>
+            聯絡人
+            <input id="contact-person" name="contactPerson" type="text" required />
+          </label>
+
+          <label>
+            聯絡人電話
+            <input id="contact-phone" name="contactPhone" type="text" required />
+          </label>
+
+          <label>
+            型號
+            <select id="model-select" name="model" required>
+              <option value="">請選擇型號</option>
+            </select>
+          </label>
+
+          <label>
+            坪數
+            <input id="area" name="area" type="number" min="0.01" step="0.01" required />
+          </label>
+        </div>
+
+        <p id="form-error" class="error hidden"></p>
+        <button type="submit">生成銷貨單</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="preview-header">
+        <h2>銷貨單預覽</h2>
+        <button id="print-btn" type="button">列印</button>
+      </div>
+      <article id="sales-order-preview" class="sales-order empty">
+        請先填寫上方資料並點擊「生成銷貨單」
+      </article>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

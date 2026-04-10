@@ -1,0 +1,227 @@
+﻿* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Microsoft JhengHei", Arial, sans-serif;
+  background: #f3f5f7;
+  color: #1f2937;
+}
+
+.container {
+  max-width: 1024px;
+  margin: 24px auto;
+  padding: 0 16px 32px;
+}
+
+h1 {
+  margin: 0 0 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.col-2 {
+  grid-column: span 2;
+}
+
+button {
+  margin-top: 12px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 6px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sales-order {
+  border: 1px solid #8a8a8a;
+  margin-top: 12px;
+  padding: 10px 10px 16px;
+  min-height: 320px;
+  background: #fff;
+  color: #111;
+  font-family: "PMingLiU", "MingLiU", "Microsoft JhengHei", Arial, sans-serif;
+  font-size: 16px;
+}
+
+.sales-order.empty {
+  color: #6b7280;
+}
+
+.so-head-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 180px;
+  align-items: end;
+  margin-bottom: 8px;
+}
+
+.so-plate {
+  font-size: 36px;
+  color: #333;
+}
+
+.so-title {
+  text-align: center;
+  font-size: 56px;
+  letter-spacing: 22px;
+  margin: 0;
+  font-weight: normal;
+}
+
+.so-page {
+  text-align: right;
+  font-size: 16px;
+  color: #333;
+}
+
+.so-meta-box {
+  border: 1px solid #b5b5b5;
+  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 8px 14px;
+  margin-bottom: 0;
+}
+
+.so-line {
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.so-k {
+  letter-spacing: 1px;
+}
+
+.so-v {
+  margin-left: 2px;
+}
+
+.so-meta-right,
+.so-meta-right-2 {
+  padding-top: 2px;
+}
+
+.so-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.so-table th,
+.so-table td {
+  border: 1px solid #b5b5b5;
+  padding: 5px 8px;
+  font-size: 16px;
+  font-weight: normal;
+}
+
+.so-detail thead th {
+  text-align: center;
+}
+
+.so-detail tbody td {
+  height: 54px;
+}
+
+.so-detail td:nth-child(1),
+.so-detail td:nth-child(3),
+.so-detail td:nth-child(4),
+.so-detail td:nth-child(5),
+.so-detail td:nth-child(6),
+.so-detail td:nth-child(7) {
+  text-align: center;
+}
+
+.so-note-line {
+  border-left: 1px solid #b5b5b5;
+  border-right: 1px solid #b5b5b5;
+  border-bottom: 1px solid #b5b5b5;
+  height: 56px;
+  line-height: 56px;
+  padding: 0 8px;
+  font-size: 16px;
+}
+
+.so-sign-line {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  padding: 12px 4px 0;
+  font-size: 16px;
+}
+
+.error {
+  color: #b91c1c;
+  margin: 8px 0 0;
+}
+
+.hidden {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .card:first-of-type,
+  h1,
+  #print-btn {
+    display: none;
+  }
+
+  .card {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sales-order {
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+}
