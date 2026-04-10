@@ -13,46 +13,77 @@
     <section class="card">
       <h2>主頁面資料填寫</h2>
       <form id="order-form" novalidate>
-        <div class="grid">
-          <label>
-            日期
-            <input id="order-date" name="orderDate" type="date" required />
-          </label>
+        <section class="form-block form-block-a">
+          <h3>區塊 A：基本資料</h3>
+          <div class="grid">
+            <label>
+              日期
+              <input id="order-date" name="orderDate" type="date" required />
+            </label>
 
-          <label>
-            店名
-            <select id="store-select" name="store" required>
-              <option value="">請選擇店名</option>
-            </select>
-          </label>
+            <label>
+              店名
+              <select id="store-select" name="store" required>
+                <option value="">請選擇店名</option>
+              </select>
+            </label>
 
-          <label class="col-2">
-            送貨地址
-            <input id="delivery-address" name="deliveryAddress" type="text" required />
-          </label>
+            <label class="col-2">
+              送貨地址
+              <input id="delivery-address" name="deliveryAddress" type="text" required />
+            </label>
 
-          <label>
-            聯絡人
-            <input id="contact-person" name="contactPerson" type="text" required />
-          </label>
+            <label>
+              聯絡人
+              <input id="contact-person" name="contactPerson" type="text" required />
+            </label>
 
-          <label>
-            聯絡人電話
-            <input id="contact-phone" name="contactPhone" type="text" required />
-          </label>
+            <label>
+              聯絡人電話
+              <input id="contact-phone" name="contactPhone" type="text" required />
+            </label>
+          </div>
+        </section>
 
-          <label>
-            型號
-            <select id="model-select" name="model" required>
-              <option value="">請選擇型號</option>
-            </select>
-          </label>
+        <section class="form-block form-block-b">
+          <h3>區塊 B：選擇商品</h3>
+          <div class="grid">
+            <label>
+              型號
+              <select id="model-select" name="model" required>
+                <option value="">請選擇型號</option>
+              </select>
+            </label>
 
-          <label>
-            坪數
-            <input id="area" name="area" type="number" min="0.01" step="0.01" required />
-          </label>
-        </div>
+            <label>
+              坪數
+              <input id="area" name="area" type="number" min="0.01" step="0.01" required />
+            </label>
+
+            <div class="col-2 line-item-actions">
+              <button id="add-item-btn" type="button">添加</button>
+            </div>
+
+            <div class="col-2">
+              <table class="draft-table">
+                <thead>
+                  <tr>
+                    <th>序</th>
+                    <th>品名 / 規格</th>
+                    <th>數量</th>
+                    <th>單位</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="draft-items-body">
+                  <tr>
+                    <td colspan="5">尚未添加明細</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
         <p id="form-error" class="error hidden"></p>
         <button type="submit">生成銷貨單</button>
@@ -61,7 +92,6 @@
 
     <section class="card">
       <div class="preview-header">
-        <h2>銷貨單預覽</h2>
         <button id="print-btn" type="button">列印</button>
       </div>
       <article id="sales-order-preview" class="sales-order empty">

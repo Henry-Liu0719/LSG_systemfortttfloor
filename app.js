@@ -52,15 +52,16 @@
     }
   ];
   var fallbackModels = [
-    { model: "KS-801", productName: "極致大師系列", brand: "KronoSwiss", unitArea: "0.55" },
-    { model: "QS-203", productName: "至臻系列", brand: "QuickStep", unitArea: "0.48" },
-    { model: "PG-502", productName: "森系列", brand: "Pergo", unitArea: "0.62" },
-    { model: "DK-110", productName: "和風實木皮", brand: "Daiken", unitArea: "0.5" },
-    { model: "UA-772", productName: "能量系列", brand: "Ua Floors", unitArea: "0.72" }
+    { model: "KS-801", productName: "極致大師系列", brand: "KronoSwiss", unitArea: "0.55", unit: "箱", unitPrice: "3500" },
+    { model: "QS-203", productName: "至臻系列", brand: "QuickStep", unitArea: "0.48", unit: "箱", unitPrice: "3200" },
+    { model: "PG-502", productName: "森系列", brand: "Pergo", unitArea: "0.62", unit: "箱", unitPrice: "3000" },
+    { model: "DK-110", productName: "和風實木皮", brand: "Daiken", unitArea: "0.5", unit: "箱", unitPrice: "2800" },
+    { model: "UA-772", productName: "能量系列", brand: "Ua Floors", unitArea: "0.72", unit: "箱", unitPrice: "2600" }
   ];
   var state = {
     stores: [],
-    models: []
+    models: [],
+    draftItems: []
   };
 
   var form = document.getElementById("order-form");
@@ -71,6 +72,8 @@
   var contactPhoneInput = document.getElementById("contact-phone");
   var modelSelect = document.getElementById("model-select");
   var areaInput = document.getElementById("area");
+  var addItemBtn = document.getElementById("add-item-btn");
+  var draftItemsBody = document.getElementById("draft-items-body");
   var errorBox = document.getElementById("form-error");
   var preview = document.getElementById("sales-order-preview");
   var printBtn = document.getElementById("print-btn");
@@ -160,6 +163,8 @@
       var productName = row["品名"] || row.productName || "";
       var brand = row["品牌"] || row.brand || "";
       var unitArea = row["一箱坪數"] || row.unitArea || "";
+      var unit = row["單位"] || row.unit || "坪";
+      var unitPrice = row["單價"] || row.unitPrice || "";
       if (!model) {
         continue;
       }
@@ -168,7 +173,9 @@
         model: model,
         productName: productName,
         brand: brand,
-        unitArea: unitArea
+        unitArea: unitArea,
+        unit: unit,
+        unitPrice: unitPrice
       });
     }
     return normalized;
@@ -198,10 +205,9 @@
     var i;
     for (i = 0; i < models.length; i += 1) {
       var m = models[i];
-      var label = m.model;
-      if (m.productName) {
-        label = m.model + " - " + m.productName;
-      }
+      var productLabel = m.productName || m.model;
+      var unitAreaLabel = m.unitArea || "-";
+      var label = productLabel + "(" + unitAreaLabel + ")";
       html +=
         '<option value="' +
         sanitize(m.id) +
@@ -269,23 +275,19 @@
       !storeSelect.value ||
       !addressInput.value ||
       !contactInput.value ||
-      !contactPhoneInput.value ||
-      !modelSelect.value ||
-      !areaInput.value
+      !contactPhoneInput.value
     ) {
       return "請完整填寫所有欄位";
     }
 
-    var area = Number(areaInput.value);
-    if (isNaN(area) || area <= 0) {
-      return "坪數必須大於 0";
+    if (!state.draftItems.length) {
+      return "請先添加至少一筆明細";
     }
     return "";
   }
 
-  function buildRuntimeDoc() {
+  function getSelectedStore() {
     var selectedStore = null;
-    var selectedModel = null;
     var i;
     for (i = 0; i < state.stores.length; i += 1) {
       if (state.stores[i].id === storeSelect.value) {
@@ -293,12 +295,118 @@
         break;
       }
     }
+    return selectedStore;
+  }
+
+  function getSelectedModel() {
+    var selectedModel = null;
+    var i;
     for (i = 0; i < state.models.length; i += 1) {
       if (state.models[i].id === modelSelect.value) {
         selectedModel = state.models[i];
         break;
       }
     }
+    return selectedModel;
+  }
+
+  function renderDraftItems() {
+    var html = "";
+    var i;
+    if (!state.draftItems.length) {
+      draftItemsBody.innerHTML = '<tr><td colspan="5">尚未添加明細</td></tr>';
+      return;
+    }
+    for (i = 0; i < state.draftItems.length; i += 1) {
+      var item = state.draftItems[i];
+      html += "<tr>";
+      html += "<td>" + sanitize(String(i + 1)) + "</td>";
+      html += "<td>" + sanitize(item.nameSpec) + "</td>";
+      html += "<td>" + sanitize(item.qty) + "</td>";
+      html += "<td>" + sanitize(item.unit) + "</td>";
+      html +=
+        '<td><button type="button" class="remove-item-btn" data-index="' +
+        sanitize(String(i)) +
+        '">刪除</button></td>';
+      html += "</tr>";
+    }
+    draftItemsBody.innerHTML = html;
+  }
+
+  function addDraftItem() {
+    var selectedModel = getSelectedModel();
+    var area = Number(areaInput.value);
+    var unitArea = Number(selectedModel ? selectedModel.unitArea : 0);
+    var quantity = 0;
+    var hasRemainder = false;
+    var quantityDisplay = "";
+    var subtotalDisplay = "";
+    if (!selectedModel) {
+      errorBox.textContent = "請先選擇型號";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+    if (isNaN(area) || area <= 0) {
+      errorBox.textContent = "坪數必須大於 0";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+
+    if (!isNaN(unitArea) && unitArea > 0) {
+      quantity = area / unitArea;
+      hasRemainder = Math.abs(quantity - Math.round(quantity)) > 0.000001;
+      quantity = Math.ceil(quantity);
+      quantityDisplay = String(quantity);
+      if (selectedModel.unitPrice && !isNaN(Number(selectedModel.unitPrice))) {
+        subtotalDisplay = String(quantity * Number(selectedModel.unitPrice));
+      }
+      if (hasRemainder) {
+        var productName = selectedModel.productName || selectedModel.model || "";
+        errorBox.textContent =
+          '品名"' +
+          productName +
+          '"總坪數無法被單位坪數整除，已自動無條件進位為 ' +
+          quantityDisplay +
+          "。";
+        errorBox.classList.remove("hidden");
+      } else {
+        errorBox.classList.add("hidden");
+      }
+    } else {
+      quantityDisplay = areaInput.value;
+      if (selectedModel.unitPrice && !isNaN(Number(selectedModel.unitPrice))) {
+        subtotalDisplay = String(Number(areaInput.value) * Number(selectedModel.unitPrice));
+      }
+      errorBox.classList.add("hidden");
+    }
+
+    state.draftItems.push({
+      no: String(state.draftItems.length + 1),
+      nameSpec:
+        selectedModel.model +
+        (selectedModel.productName ? " / " + selectedModel.productName : ""),
+      qty: quantityDisplay,
+      unit: selectedModel.unit || "坪",
+      unitPrice: selectedModel.unitPrice || "",
+      subtotal: subtotalDisplay,
+      remark: ""
+    });
+    areaInput.value = "";
+    modelSelect.value = "";
+    renderDraftItems();
+  }
+
+  function removeDraftItem(index) {
+    state.draftItems.splice(index, 1);
+    var i;
+    for (i = 0; i < state.draftItems.length; i += 1) {
+      state.draftItems[i].no = String(i + 1);
+    }
+    renderDraftItems();
+  }
+
+  function buildRuntimeDoc() {
+    var selectedStore = getSelectedStore();
 
     var doc = {
       customerName: selectedStore ? selectedStore.branchName || selectedStore.alias || "" : "",
@@ -313,22 +421,8 @@
       orderNo: nextOrderNo(dateInput.value),
       invoiceCode: "",
       pageText: "第 1 頁,共 1 頁",
-      items: []
+      items: state.draftItems.slice(0)
     };
-
-    if (selectedModel) {
-      doc.items.push({
-        no: "1",
-        nameSpec:
-          selectedModel.model +
-          (selectedModel.productName ? " / " + selectedModel.productName : ""),
-        qty: areaInput.value || "",
-        unit: "坪",
-        unitPrice: "",
-        subtotal: "",
-        remark: ""
-      });
-    }
     return doc;
   }
 
@@ -352,7 +446,7 @@
     var html = "";
     html += '<div class="so-head-row">';
     html += '<div class="so-plate">車號:</div>';
-    html += '<h3 class="so-title">銷　貨　單</h3>';
+    html += '<h3 class="so-title">銷貨單</h3>';
     html += '<div class="so-page">' + sanitize(doc.pageText) + "</div>";
     html += "</div>";
     html += '<div class="so-meta-box">';
@@ -406,6 +500,13 @@
     });
 
     storeSelect.addEventListener("change", applyStoreInfo);
+    addItemBtn.addEventListener("click", addDraftItem);
+    draftItemsBody.addEventListener("click", function (event) {
+      var target = event.target;
+      if (target && target.className.indexOf("remove-item-btn") > -1) {
+        removeDraftItem(Number(target.getAttribute("data-index")));
+      }
+    });
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
@@ -422,6 +523,8 @@
     printBtn.addEventListener("click", function () {
       window.print();
     });
+
+    renderDraftItems();
   }
 
   bootstrap();
