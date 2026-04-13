@@ -1,50 +1,54 @@
 ﻿(function () {
   var SHEET_JSON_URL =
     "https://opensheet.elk.sh/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/Tab";
+  var STORE_GVIZ_URL =
+    "https://docs.google.com/spreadsheets/d/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/gviz/tq?gid=1653715763&tqx=out:json";
   var MODEL_SHEET_JSON_URL =
     "https://opensheet.elk.sh/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/External";
+  var MODEL_GVIZ_URL =
+    "https://docs.google.com/spreadsheets/d/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/gviz/tq?gid=1666483658&tqx=out:json";
 
   var fallbackStores = [
-    {
-      branchName: "說事實總部",
-      alias: "台北店",
-      address: "台北市信義區松隆路205之一號",
-      phone: "02-8509-1579",
-      customerCode: "A054",
-      taxId: "53981220",
-      fax: "02-27672310",
-      contactPerson: "王小明"
-    },
-    {
-      branchName: "說事實竹北店",
-      alias: "竹北店",
-      address: "竹北市新瀧一街8號",
-      phone: "0936-247-132",
-      customerCode: "B112",
-      taxId: "24876543",
-      fax: "03-6678123",
-      contactPerson: "李小華"
-    },
-    {
-      branchName: "說事實嘉義店",
-      alias: "嘉義店",
-      address: "嘉義市西區南京東街360號",
-      phone: "0921-468-576",
-      customerCode: "C205",
-      taxId: "66554433",
-      fax: "05-2865001",
-      contactPerson: "陳志明"
-    },
-    {
-      branchName: "說事實台南店",
-      alias: "臺南店",
-      address: "台南市永康區永大路二段358號",
-      phone: "0983-267-115",
-      customerCode: "D018",
-      taxId: "70998811",
-      fax: "06-3021199",
-      contactPerson: "黃怡君"
-    },
+    // {
+    //   branchName: "說事實總部",
+    //   alias: "台北店",
+    //   address: "台北市信義區松隆路205之一號",
+    //   phone: "02-8509-1579",
+    //   customerCode: "A054",
+    //   taxId: "53981220",
+    //   fax: "02-27672310",
+    //   contactPerson: "王小明"
+    // },
+    // {
+    //   branchName: "說事實竹北店",
+    //   alias: "竹北店",
+    //   address: "竹北市新瀧一街8號",
+    //   phone: "0936-247-132",
+    //   customerCode: "B112",
+    //   taxId: "24876543",
+    //   fax: "03-6678123",
+    //   contactPerson: "李小華"
+    // },
+    // {
+    //   branchName: "說事實嘉義店",
+    //   alias: "嘉義店",
+    //   address: "嘉義市西區南京東街360號",
+    //   phone: "0921-468-576",
+    //   customerCode: "C205",
+    //   taxId: "66554433",
+    //   fax: "05-2865001",
+    //   contactPerson: "陳志明"
+    // },
+    // {
+    //   branchName: "說事實台南店",
+    //   alias: "臺南店",
+    //   address: "台南市永康區永大路二段358號",
+    //   phone: "0983-267-115",
+    //   customerCode: "D018",
+    //   taxId: "70998811",
+    //   fax: "06-3021199",
+    //   contactPerson: "黃怡君"
+    // },
     {
       branchName: "說事實高雄店",
       alias: "高雄店",
@@ -58,10 +62,10 @@
   ];
   var fallbackModels = [
     { model: "KS-801", productName: "極致大師系列", brand: "KronoSwiss", unitArea: "0.55", unit: "箱", unitPrice: "3500" },
-    { model: "QS-203", productName: "至臻系列", brand: "QuickStep", unitArea: "0.48", unit: "箱", unitPrice: "3200" },
-    { model: "PG-502", productName: "森系列", brand: "Pergo", unitArea: "0.62", unit: "箱", unitPrice: "3000" },
-    { model: "DK-110", productName: "和風實木皮", brand: "Daiken", unitArea: "0.5", unit: "箱", unitPrice: "2800" },
-    { model: "UA-772", productName: "能量系列", brand: "Ua Floors", unitArea: "0.72", unit: "箱", unitPrice: "2600" }
+    // { model: "QS-203", productName: "至臻系列", brand: "QuickStep", unitArea: "0.48", unit: "箱", unitPrice: "3200" },
+    // { model: "PG-502", productName: "森系列", brand: "Pergo", unitArea: "0.62", unit: "箱", unitPrice: "3000" },
+    // { model: "DK-110", productName: "和風實木皮", brand: "Daiken", unitArea: "0.5", unit: "箱", unitPrice: "2800" },
+    // { model: "UA-772", productName: "能量系列", brand: "Ua Floors", unitArea: "0.72", unit: "箱", unitPrice: "2600" }
   ];
   var state = {
     stores: [],
@@ -199,11 +203,11 @@
     for (i = 0; i < rows.length; i += 1) {
       var row = rows[i] || {};
       var branchName = row["分店名稱"] || row.branchName || "";
-      var alias = row["分店暱稱"] || row.alias || branchName;
+      var alias = row["分店暱稱"] || row["別名"] || row.alias || branchName;
       var address = row["地址"] || row.address || "";
       var phone = row["電話"] || row.phone || "";
-      var customerCode = row["客戶編號"] || row.customerCode || "";
-      var taxId = row["統編"] || row["客戶統編"] || row.taxId || "";
+      var customerCode = row["客戶編號"] || row["客戶代碼"] || row.customerCode || "";
+      var taxId = row["統編"] || row["客戶統編"] || row["統一編號"] || row.taxId || "";
       var fax = row["傳真"] || row.fax || "";
       var contactPerson = row["聯絡人"] || row.contactPerson || "";
       if (!branchName && !alias) {
@@ -230,11 +234,11 @@
     for (i = 0; i < rows.length; i += 1) {
       var row = rows[i] || {};
       var model = row["型號"] || row.model || "";
-      var productName = row["品名"] || row.productName || "";
+      var productName = row["品名"] || row["產品名稱"] || row.productName || "";
       var brand = row["品牌"] || row.brand || "";
-      var unitArea = row["一箱坪數"] || row.unitArea || "";
+      var unitArea = row["一箱坪數"] || row["單位面積(坪)"] || row.unitArea || "";
       var unit = row["單位"] || row.unit || "坪";
-      var unitPrice = row["單價"] || row.unitPrice || "";
+      var unitPrice = row["單價"] || row["單價(TWD)"] || row.unitPrice || "";
       if (!model) {
         continue;
       }
@@ -286,43 +290,126 @@
   }
 
   function loadStores() {
-    return fetch(SHEET_JSON_URL)
+    return fetch(STORE_GVIZ_URL)
       .then(function (res) {
         if (!res.ok) {
-          throw new Error("資料來源讀取失敗");
+          throw new Error("GViz 讀取失敗，HTTP " + String(res.status));
         }
-        return res.json();
+        return res.text();
       })
-      .then(function (rows) {
+      .then(function (raw) {
+        var rows = parseGvizRows(raw);
         var parsed = normalizeStores(rows);
         if (!parsed.length) {
-          throw new Error("資料來源無有效門市資料");
+          throw new Error("GViz 門市資料為空");
         }
         return parsed;
       })
-      .catch(function () {
-        return normalizeStores(fallbackStores);
+      .catch(function (gvizError) {
+        return fetch(SHEET_JSON_URL)
+          .then(function (res) {
+            if (!res.ok) {
+              throw new Error("OpenSheet 讀取失敗，HTTP " + String(res.status));
+            }
+            return res.json();
+          })
+          .then(function (rows) {
+            var parsed = normalizeStores(rows);
+            if (!parsed.length) {
+              throw new Error("OpenSheet 門市資料為空");
+            }
+            return parsed;
+          })
+          .catch(function (openSheetError) {
+            if (window.console && typeof window.console.warn === "function") {
+              window.console.warn("loadStores: 線上資料讀取失敗，改用 fallbackStores", {
+                gvizError: gvizError ? gvizError.message : "",
+                openSheetError: openSheetError ? openSheetError.message : ""
+              });
+            }
+            return normalizeStores(fallbackStores);
+          });
       });
   }
 
   function loadModels() {
-    return fetch(MODEL_SHEET_JSON_URL)
+    return fetch(MODEL_GVIZ_URL)
       .then(function (res) {
         if (!res.ok) {
-          throw new Error("型號資料來源讀取失敗");
+          throw new Error("GViz 讀取失敗，HTTP " + String(res.status));
         }
-        return res.json();
+        return res.text();
       })
-      .then(function (rows) {
+      .then(function (raw) {
+        var rows = parseGvizRows(raw);
         var parsed = normalizeModels(rows);
         if (!parsed.length) {
-          throw new Error("型號資料來源無有效資料");
+          throw new Error("GViz 型號資料為空");
         }
         return parsed;
       })
-      .catch(function () {
-        return normalizeModels(fallbackModels);
+      .catch(function (gvizError) {
+        return fetch(MODEL_SHEET_JSON_URL)
+          .then(function (res) {
+            if (!res.ok) {
+              throw new Error("OpenSheet 讀取失敗，HTTP " + String(res.status));
+            }
+            return res.json();
+          })
+          .then(function (rows) {
+            var parsed = normalizeModels(rows);
+            if (!parsed.length) {
+              throw new Error("OpenSheet 型號資料為空");
+            }
+            return parsed;
+          })
+          .catch(function (openSheetError) {
+            if (window.console && typeof window.console.warn === "function") {
+              window.console.warn("loadModels: 線上資料讀取失敗，改用 fallbackModels", {
+                gvizError: gvizError ? gvizError.message : "",
+                openSheetError: openSheetError ? openSheetError.message : ""
+              });
+            }
+            return normalizeModels(fallbackModels);
+          });
       });
+  }
+
+  function parseGvizRows(raw) {
+    var prefix = "google.visualization.Query.setResponse(";
+    var start = raw.indexOf(prefix);
+    var jsonText = raw;
+    var payload;
+    var table;
+    var cols;
+    var rows;
+    var result = [];
+    var i;
+    if (start > -1) {
+      jsonText = raw.substring(start + prefix.length);
+      if (jsonText.lastIndexOf(");") === jsonText.length - 2) {
+        jsonText = jsonText.substring(0, jsonText.length - 2);
+      }
+    }
+    payload = JSON.parse(jsonText);
+    table = payload && payload.table ? payload.table : null;
+    cols = table && table.cols ? table.cols : [];
+    rows = table && table.rows ? table.rows : [];
+
+    for (i = 0; i < rows.length; i += 1) {
+      var row = rows[i];
+      var cells = row && row.c ? row.c : [];
+      var item = {};
+      var j;
+      for (j = 0; j < cols.length; j += 1) {
+        var col = cols[j] || {};
+        var key = col.label || col.id || ("col" + String(j));
+        var cell = cells[j];
+        item[key] = cell && cell.v !== undefined && cell.v !== null ? cell.v : "";
+      }
+      result.push(item);
+    }
+    return result;
   }
 
   function applyStoreInfo() {
