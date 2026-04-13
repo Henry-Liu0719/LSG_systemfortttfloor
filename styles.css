@@ -330,8 +330,20 @@ button:hover {
 }
 
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
   body {
     background: #fff;
+  }
+
+  .container {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   .card:first-of-type,

@@ -91,6 +91,7 @@
   var printGuideModal = document.getElementById("print-guide-modal");
   var closePrintGuideBtn = document.getElementById("close-print-guide-btn");
   var orderCounter = 1;
+  var originalDocumentTitle = document.title;
 
   function storeLabel(store) {
     var label = store.alias;
@@ -653,6 +654,44 @@
     preview.innerHTML = html;
   }
 
+  function sanitizeFileNamePart(text) {
+    return String(text || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .replace(/\s+/g, "")
+      .replace(/_+/g, "_");
+  }
+
+  function buildPrintFileName() {
+    var selectedStore = getSelectedStore();
+    var datePart = String(dateInput.value || "").replace(/-/g, "");
+    var customerName = "";
+
+    if (selectedStore) {
+      customerName = selectedStore.branchName || selectedStore.alias || "";
+    }
+    if (!customerName) {
+      customerName = contactInput.value || "";
+    }
+    if (!datePart) {
+      var today = new Date();
+      var month = String(today.getMonth() + 1);
+      var day = String(today.getDate());
+      if (month.length < 2) {
+        month = "0" + month;
+      }
+      if (day.length < 2) {
+        day = "0" + day;
+      }
+      datePart = String(today.getFullYear()) + month + day;
+    }
+
+    customerName = sanitizeFileNamePart(customerName);
+    if (!customerName) {
+      customerName = "客戶";
+    }
+    return datePart + "_" + customerName;
+  }
+
   function bootstrap() {
     setDefaultDate();
     loadStores().then(function (stores) {
@@ -687,6 +726,7 @@
     });
 
     printBtn.addEventListener("click", function () {
+      document.title = buildPrintFileName();
       window.print();
     });
     printGuideBtn.addEventListener("click", function () {
@@ -703,6 +743,10 @@
 
     renderDraftItems();
   }
+
+  window.addEventListener("afterprint", function () {
+    document.title = originalDocumentTitle;
+  });
 
   bootstrap();
 })();
