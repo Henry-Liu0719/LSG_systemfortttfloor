@@ -584,7 +584,7 @@
       fax: selectedStore ? selectedStore.fax || "" : "",
       deliveryAddress: addressInput.value || "",
       orderDate: formatDateForDoc(dateInput.value),
-      orderNo: nextOrderNo(dateInput.value),
+      orderNo: "",
       invoiceCode: "",
       pageText: "第 1 頁,共 1 頁",
       items: state.draftItems.slice(0)
