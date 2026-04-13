@@ -12,7 +12,8 @@
       phone: "02-8509-1579",
       customerCode: "A054",
       taxId: "53981220",
-      fax: "02-27672310"
+      fax: "02-27672310",
+      contactPerson: "王小明"
     },
     {
       branchName: "說事實竹北店",
@@ -21,7 +22,8 @@
       phone: "0936-247-132",
       customerCode: "B112",
       taxId: "24876543",
-      fax: "03-6678123"
+      fax: "03-6678123",
+      contactPerson: "李小華"
     },
     {
       branchName: "說事實嘉義店",
@@ -30,7 +32,8 @@
       phone: "0921-468-576",
       customerCode: "C205",
       taxId: "66554433",
-      fax: "05-2865001"
+      fax: "05-2865001",
+      contactPerson: "陳志明"
     },
     {
       branchName: "說事實台南店",
@@ -39,7 +42,8 @@
       phone: "0983-267-115",
       customerCode: "D018",
       taxId: "70998811",
-      fax: "06-3021199"
+      fax: "06-3021199",
+      contactPerson: "黃怡君"
     },
     {
       branchName: "說事實高雄店",
@@ -48,7 +52,8 @@
       phone: "0968-613766",
       customerCode: "E301",
       taxId: "82828811",
-      fax: "07-7402255"
+      fax: "07-7402255",
+      contactPerson: "張雅婷"
     }
   ];
   var fallbackModels = [
@@ -68,6 +73,7 @@
   var dateInput = document.getElementById("order-date");
   var storeSelect = document.getElementById("store-select");
   var addressInput = document.getElementById("delivery-address");
+  var taxIdInput = document.getElementById("tax-id");
   var contactInput = document.getElementById("contact-person");
   var contactPhoneInput = document.getElementById("contact-phone");
   var modelSelect = document.getElementById("model-select");
@@ -137,6 +143,7 @@
       var customerCode = row["客戶編號"] || row.customerCode || "";
       var taxId = row["統編"] || row["客戶統編"] || row.taxId || "";
       var fax = row["傳真"] || row.fax || "";
+      var contactPerson = row["聯絡人"] || row.contactPerson || "";
       if (!branchName && !alias) {
         continue;
       }
@@ -148,7 +155,8 @@
         phone: phone,
         customerCode: customerCode,
         taxId: taxId,
-        fax: fax
+        fax: fax,
+        contactPerson: contactPerson
       });
     }
     return normalized;
@@ -259,26 +267,34 @@
   }
 
   function applyStoreInfo() {
-    var selectedId = storeSelect.value;
-    var i;
-    for (i = 0; i < state.stores.length; i += 1) {
-      if (state.stores[i].id === selectedId) {
-        addressInput.value = state.stores[i].address;
-        return;
-      }
+    var selectedStore = getSelectedStore();
+    if (!selectedStore) {
+      taxIdInput.value = "";
+      contactInput.value = "";
+      contactPhoneInput.value = "";
+      return;
     }
+    taxIdInput.value = selectedStore.taxId || "";
+    contactInput.value = selectedStore.contactPerson || "";
+    contactPhoneInput.value = selectedStore.phone || "";
   }
 
   function validate() {
+    var taxIdValue = String(taxIdInput.value || "").replace(/\s/g, "");
     if (
       !dateInput.value ||
       !storeSelect.value ||
       !addressInput.value ||
+      !taxIdValue ||
       !contactInput.value ||
       !contactPhoneInput.value
     ) {
       return "請完整填寫所有欄位";
     }
+    if (!/^\d{8}$/.test(taxIdValue)) {
+      return "統編格式錯誤，請輸入 8 碼數字";
+    }
+    taxIdInput.value = taxIdValue;
 
     if (!state.draftItems.length) {
       return "請先添加至少一筆明細";
@@ -411,7 +427,7 @@
     var doc = {
       customerName: selectedStore ? selectedStore.branchName || selectedStore.alias || "" : "",
       customerCode: selectedStore ? selectedStore.customerCode || "" : "",
-      taxId: selectedStore ? selectedStore.taxId || "" : "",
+      taxId: taxIdInput.value || "",
       contactPerson: contactInput.value || "",
       contactPhone: contactPhoneInput.value || "",
       tel: selectedStore ? selectedStore.phone || "" : "",
