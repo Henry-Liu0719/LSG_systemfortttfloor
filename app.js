@@ -85,6 +85,68 @@
   var printBtn = document.getElementById("print-btn");
   var orderCounter = 1;
 
+  function storeLabel(store) {
+    var label = store.alias;
+    if (store.branchName && store.branchName !== store.alias) {
+      label = store.alias + " (" + store.branchName + ")";
+    }
+    return label;
+  }
+
+  function modelLabel(model) {
+    var productLabel = model.productName || model.model;
+    var unitAreaLabel = model.unitArea || "-";
+    return productLabel + "(" + unitAreaLabel + ")";
+  }
+
+  function getJquery() {
+    if (window.jQuery) {
+      return window.jQuery;
+    }
+    return null;
+  }
+
+  function hasSelect2() {
+    var $ = getJquery();
+    return !!($ && $.fn && $.fn.select2);
+  }
+
+  function initSelect2() {
+    var $ = getJquery();
+    if (!hasSelect2()) {
+      return;
+    }
+    $(storeSelect).select2({
+      width: "100%",
+      placeholder: "請選擇店名",
+      allowClear: true
+    });
+    $(modelSelect).select2({
+      width: "100%",
+      placeholder: "請選擇型號",
+      allowClear: true
+    });
+
+    // Ensure store auto-fill works consistently under Select2 interactions.
+    $(storeSelect).on("change select2:select select2:clear", applyStoreInfo);
+  }
+
+  function refreshSelect2(selectElement) {
+    var $ = getJquery();
+    if (!hasSelect2()) {
+      return;
+    }
+    $(selectElement).trigger("change.select2");
+  }
+
+  function setSelectValue(selectElement, value) {
+    var $ = getJquery();
+    selectElement.value = value;
+    if (hasSelect2()) {
+      $(selectElement).trigger("change");
+    }
+  }
+
   function setDefaultDate() {
     var today = new Date();
     var year = today.getFullYear();
@@ -194,10 +256,7 @@
     var i;
     for (i = 0; i < stores.length; i += 1) {
       var s = stores[i];
-      var label = s.alias;
-      if (s.branchName && s.branchName !== s.alias) {
-        label = s.alias + " (" + s.branchName + ")";
-      }
+      var label = storeLabel(s);
       html +=
         '<option value="' +
         sanitize(s.id) +
@@ -206,6 +265,7 @@
         "</option>";
     }
     storeSelect.innerHTML = html;
+    refreshSelect2(storeSelect);
   }
 
   function renderModelOptions(models) {
@@ -213,9 +273,7 @@
     var i;
     for (i = 0; i < models.length; i += 1) {
       var m = models[i];
-      var productLabel = m.productName || m.model;
-      var unitAreaLabel = m.unitArea || "-";
-      var label = productLabel + "(" + unitAreaLabel + ")";
+      var label = modelLabel(m);
       html +=
         '<option value="' +
         sanitize(m.id) +
@@ -224,6 +282,7 @@
         "</option>";
     }
     modelSelect.innerHTML = html;
+    refreshSelect2(modelSelect);
   }
 
   function loadStores() {
@@ -408,7 +467,7 @@
       remark: ""
     });
     areaInput.value = "";
-    modelSelect.value = "";
+    setSelectValue(modelSelect, "");
     renderDraftItems();
   }
 
@@ -515,6 +574,7 @@
       renderModelOptions(models);
     });
 
+    initSelect2();
     storeSelect.addEventListener("change", applyStoreInfo);
     addItemBtn.addEventListener("click", addDraftItem);
     draftItemsBody.addEventListener("click", function (event) {
