@@ -87,6 +87,9 @@
   var errorBox = document.getElementById("form-error");
   var preview = document.getElementById("sales-order-preview");
   var printBtn = document.getElementById("print-btn");
+  var printGuideBtn = document.getElementById("print-guide-btn");
+  var printGuideModal = document.getElementById("print-guide-modal");
+  var closePrintGuideBtn = document.getElementById("close-print-guide-btn");
   var orderCounter = 1;
 
   function storeLabel(store) {
@@ -640,7 +643,7 @@
     html += '<div class="so-sign-line">';
     html += "<span>司機：</span>";
     html += "<span>跟車：</span>";
-    html += "<span>倉庫趨數：</span>";
+    html += "<span>倉庫趟數：</span>";
     html += "<span>倉管：</span>";
     html += "<span>製單：</span>";
     html += "<span>簽收：</span>";
@@ -685,6 +688,17 @@
 
     printBtn.addEventListener("click", function () {
       window.print();
+    });
+    printGuideBtn.addEventListener("click", function () {
+      printGuideModal.classList.remove("hidden");
+    });
+    closePrintGuideBtn.addEventListener("click", function () {
+      printGuideModal.classList.add("hidden");
+    });
+    printGuideModal.addEventListener("click", function (event) {
+      if (event.target === printGuideModal) {
+        printGuideModal.classList.add("hidden");
+      }
     });
 
     renderDraftItems();

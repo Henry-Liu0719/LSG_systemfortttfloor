@@ -101,13 +101,29 @@
 
     <section class="card">
       <div class="preview-header">
-        <button id="print-btn" type="button">列印</button>
+        <div class="preview-actions">
+          <button id="print-btn" type="button">列印</button>
+          <button id="print-guide-btn" type="button" class="link-btn">列印說明</button>
+        </div>
       </div>
       <article id="sales-order-preview" class="sales-order empty">
         請先填寫上方資料並點擊「生成銷貨單」
       </article>
     </section>
   </main>
+
+  <div id="print-guide-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="print-guide-title">
+    <div class="modal-panel">
+      <h2 id="print-guide-title">列印說明</h2>
+      <ol class="modal-list">
+        <li>若用 LINE 開啟網頁，請複製連結改用 Chrome 或 Safari 開啟，確保內建列印功能正常。</li>
+        <li>若頁頭頁尾出現網頁標題或時間戳，請從列印視窗的「選項」關閉。</li>
+      </ol>
+      <div class="modal-actions">
+        <button id="close-print-guide-btn" type="button">我知道了</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
