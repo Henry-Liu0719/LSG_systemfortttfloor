@@ -7,6 +7,8 @@
     "https://opensheet.elk.sh/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/External";
   var MODEL_GVIZ_URL =
     "https://docs.google.com/spreadsheets/d/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/gviz/tq?gid=1666483658&tqx=out:json";
+  var ACCESSORY_GVIZ_URL =
+    "https://docs.google.com/spreadsheets/d/1bOtavx_UW_vM_bRKBiFlw-G0eioDGoSmukIJntH2-Bw/gviz/tq?gid=1816861047&tqx=out:json";
 
   var fallbackStores = [
     // {
@@ -67,9 +69,15 @@
     // { model: "DK-110", productName: "和風實木皮", brand: "Daiken", unitArea: "0.5", unit: "箱", unitPrice: "2800" },
     // { model: "UA-772", productName: "能量系列", brand: "Ua Floors", unitArea: "0.72", unit: "箱", unitPrice: "2600" }
   ];
+  var fallbackAccessories = [
+    { name: "底襯（卷）", spec: "2mm", rollArea: "15", unitPrice: "10" },
+    { name: "底襯（卷）", spec: "1mm", rollArea: "15", unitPrice: "20" },
+    { name: "壓條", spec: "240cm", rollArea: "30", unitPrice: "" }
+  ];
   var state = {
     stores: [],
     models: [],
+    accessories: [],
     draftItems: []
   };
 
@@ -81,6 +89,7 @@
   var contactInput = document.getElementById("contact-person");
   var contactPhoneInput = document.getElementById("contact-phone");
   var modelSelect = document.getElementById("model-select");
+  var accessorySelect = document.getElementById("accessory-select");
   var areaInput = document.getElementById("area");
   var quantityInput = document.getElementById("quantity");
   var previewTotalPackages = document.getElementById("preview-total-packages");
@@ -112,6 +121,12 @@
     return nameLabel + "(" + packageAreaLabel + ")";
   }
 
+  function accessoryLabel(accessory) {
+    var rollArea = accessory.rollArea ? accessory.rollArea : "-";
+    var unitPrice = accessory.unitPrice ? accessory.unitPrice : "-";
+    return accessory.name + " | " + accessory.spec + " | " + rollArea + " | " + unitPrice;
+  }
+
   function getJquery() {
     if (window.jQuery) {
       return window.jQuery;
@@ -139,11 +154,18 @@
       placeholder: "請選擇型號",
       allowClear: true
     });
+    $(accessorySelect).select2({
+      width: "100%",
+      placeholder: "請選擇配件",
+      allowClear: true
+    });
 
     // Ensure store auto-fill works consistently under Select2 interactions.
     $(storeSelect).on("change select2:select select2:clear", applyStoreInfo);
     // Ensure model preview updates consistently under Select2 interactions.
     $(modelSelect).on("change select2:select select2:clear", handleModelChange);
+    // Ensure accessory preview updates consistently under Select2 interactions.
+    $(accessorySelect).on("change select2:select select2:clear", handleAccessoryChange);
   }
 
   function refreshSelect2(selectElement) {
@@ -282,6 +304,29 @@
     return normalized;
   }
 
+  function normalizeAccessories(rows) {
+    var normalized = [];
+    var i;
+    for (i = 0; i < rows.length; i += 1) {
+      var row = rows[i] || {};
+      var name = row["名稱"] || row.name || "";
+      var spec = row["規格"] || row.spec || "";
+      var rollArea = row["每卷坪數"] || row.rollArea || "";
+      var unitPrice = row["單價"] || row.unitPrice || "";
+      if (!name && !spec) {
+        continue;
+      }
+      normalized.push({
+        id: String(i),
+        name: name,
+        spec: spec,
+        rollArea: rollArea,
+        unitPrice: unitPrice
+      });
+    }
+    return normalized;
+  }
+
   function renderStoreOptions(stores) {
     var html = '<option value="">請選擇店名</option>';
     var i;
@@ -314,6 +359,23 @@
     }
     modelSelect.innerHTML = html;
     refreshSelect2(modelSelect);
+  }
+
+  function renderAccessoryOptions(accessories) {
+    var html = '<option value="">請選擇配件</option>';
+    var i;
+    for (i = 0; i < accessories.length; i += 1) {
+      var a = accessories[i];
+      var label = accessoryLabel(a);
+      html +=
+        '<option value="' +
+        sanitize(a.id) +
+        '">' +
+        sanitize(label) +
+        "</option>";
+    }
+    accessorySelect.innerHTML = html;
+    refreshSelect2(accessorySelect);
   }
 
   function loadStores() {
@@ -399,6 +461,27 @@
             }
             return normalizeModels(fallbackModels);
           });
+      });
+  }
+
+  function loadAccessories() {
+    return fetch(ACCESSORY_GVIZ_URL)
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("GViz 讀取失敗，HTTP " + String(res.status));
+        }
+        return res.text();
+      })
+      .then(function (raw) {
+        var rows = parseGvizRows(raw);
+        var parsed = normalizeAccessories(rows);
+        if (!parsed.length) {
+          throw new Error("GViz 配件資料為空");
+        }
+        return parsed;
+      })
+      .catch(function () {
+        return normalizeAccessories(fallbackAccessories);
       });
   }
 
@@ -499,6 +582,36 @@
     return selectedModel;
   }
 
+  function getSelectedAccessory() {
+    var selectedAccessory = null;
+    var i;
+    for (i = 0; i < state.accessories.length; i += 1) {
+      if (state.accessories[i].id === accessorySelect.value) {
+        selectedAccessory = state.accessories[i];
+        break;
+      }
+    }
+    return selectedAccessory;
+  }
+
+  function getSelectedProduct() {
+    var model = getSelectedModel();
+    if (model) {
+      return {
+        type: "model",
+        data: model
+      };
+    }
+    var accessory = getSelectedAccessory();
+    if (accessory) {
+      return {
+        type: "accessory",
+        data: accessory
+      };
+    }
+    return null;
+  }
+
   function toFixedTrimmed(value, digits) {
     if (isNaN(value)) {
       return "";
@@ -516,6 +629,10 @@
 
   function getSelectedModelPackageArea(selectedModel) {
     return Number(selectedModel ? (selectedModel.packageArea || selectedModel.unitArea) : 0);
+  }
+
+  function getSelectedAccessoryRollArea(selectedAccessory) {
+    return Number(selectedAccessory ? selectedAccessory.rollArea : 0);
   }
 
   function calcItemMetrics(selectedModel, area) {
@@ -572,11 +689,63 @@
     };
   }
 
+  function calcAccessoryMetrics(selectedAccessory, area) {
+    var rollArea = getSelectedAccessoryRollArea(selectedAccessory);
+    var unitPrice = Number(selectedAccessory ? selectedAccessory.unitPrice : 0);
+    var packageCount = 0;
+    var actualArea = area;
+    var totalPrice = 0;
+
+    if (!isNaN(rollArea) && rollArea > 0 && !isNaN(area) && area > 0) {
+      packageCount = Math.ceil(area / rollArea);
+      actualArea = packageCount * rollArea;
+    }
+
+    if (!isNaN(unitPrice) && unitPrice > 0 && packageCount > 0) {
+      totalPrice = packageCount * unitPrice;
+    }
+
+    return {
+      packageArea: rollArea,
+      packageCount: packageCount,
+      actualArea: actualArea,
+      hasRemainder: false,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice
+    };
+  }
+
+  function calcAccessoryMetricsByQuantity(selectedAccessory, quantity) {
+    var rollArea = getSelectedAccessoryRollArea(selectedAccessory);
+    var unitPrice = Number(selectedAccessory ? selectedAccessory.unitPrice : 0);
+    var actualArea = 0;
+    var totalPrice = 0;
+    if (!isNaN(rollArea) && rollArea > 0 && !isNaN(quantity) && quantity > 0) {
+      actualArea = quantity * rollArea;
+    }
+    if (!isNaN(unitPrice) && unitPrice > 0 && !isNaN(quantity) && quantity > 0) {
+      totalPrice = quantity * unitPrice;
+    }
+    return {
+      packageArea: rollArea,
+      packageCount: quantity,
+      actualArea: actualArea,
+      hasRemainder: false,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice
+    };
+  }
+
   function syncFromAreaInput() {
-    var selectedModel = getSelectedModel();
+    var selectedProduct = getSelectedProduct();
     var area = Number(areaInput.value);
-    var packageArea = getSelectedModelPackageArea(selectedModel);
-    if (!selectedModel || isNaN(area) || area <= 0 || isNaN(packageArea) || packageArea <= 0) {
+    var packageArea = 0;
+    if (selectedProduct && selectedProduct.type === "model") {
+      packageArea = getSelectedModelPackageArea(selectedProduct.data);
+    } else if (selectedProduct && selectedProduct.type === "accessory") {
+      packageArea = getSelectedAccessoryRollArea(selectedProduct.data);
+    }
+    if (!selectedProduct || isNaN(area) || area <= 0 || isNaN(packageArea) || packageArea <= 0) {
       if (lastEditedMeasureField === "area" || !areaInput.value) {
         quantityInput.value = "";
       }
@@ -586,10 +755,15 @@
   }
 
   function syncFromQuantityInput() {
-    var selectedModel = getSelectedModel();
+    var selectedProduct = getSelectedProduct();
     var quantity = Number(quantityInput.value);
-    var packageArea = getSelectedModelPackageArea(selectedModel);
-    if (!selectedModel || isNaN(quantity) || quantity <= 0 || isNaN(packageArea) || packageArea <= 0) {
+    var packageArea = 0;
+    if (selectedProduct && selectedProduct.type === "model") {
+      packageArea = getSelectedModelPackageArea(selectedProduct.data);
+    } else if (selectedProduct && selectedProduct.type === "accessory") {
+      packageArea = getSelectedAccessoryRollArea(selectedProduct.data);
+    }
+    if (!selectedProduct || isNaN(quantity) || quantity <= 0 || isNaN(packageArea) || packageArea <= 0) {
       if (lastEditedMeasureField === "quantity" || !quantityInput.value) {
         areaInput.value = "";
       }
@@ -599,6 +773,21 @@
   }
 
   function handleModelChange() {
+    if (modelSelect.value) {
+      setSelectValue(accessorySelect, "");
+    }
+    if (lastEditedMeasureField === "quantity" && quantityInput.value) {
+      syncFromQuantityInput();
+    } else {
+      syncFromAreaInput();
+    }
+    updateAreaPreview();
+  }
+
+  function handleAccessoryChange() {
+    if (accessorySelect.value) {
+      setSelectValue(modelSelect, "");
+    }
     if (lastEditedMeasureField === "quantity" && quantityInput.value) {
       syncFromQuantityInput();
     } else {
@@ -608,24 +797,37 @@
   }
 
   function updateAreaPreview() {
-    var selectedModel = getSelectedModel();
+    var selectedProduct = getSelectedProduct();
     var area = Number(areaInput.value);
-    if (!selectedModel) {
+    if (!selectedProduct) {
       clearAreaPreview();
       return;
     }
     var quantity = Number(quantityInput.value);
     var metrics;
 
-    if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
-      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
-    } else if (!isNaN(area) && area > 0) {
-      metrics = calcItemMetrics(selectedModel, area);
-    } else if (!isNaN(quantity) && quantity > 0) {
-      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+    if (selectedProduct.type === "model") {
+      if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
+        metrics = calcItemMetricsByQuantity(selectedProduct.data, quantity);
+      } else if (!isNaN(area) && area > 0) {
+        metrics = calcItemMetrics(selectedProduct.data, area);
+      } else if (!isNaN(quantity) && quantity > 0) {
+        metrics = calcItemMetricsByQuantity(selectedProduct.data, quantity);
+      } else {
+        clearAreaPreview();
+        return;
+      }
     } else {
-      clearAreaPreview();
-      return;
+      if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
+        metrics = calcAccessoryMetricsByQuantity(selectedProduct.data, quantity);
+      } else if (!isNaN(area) && area > 0) {
+        metrics = calcAccessoryMetrics(selectedProduct.data, area);
+      } else if (!isNaN(quantity) && quantity > 0) {
+        metrics = calcAccessoryMetricsByQuantity(selectedProduct.data, quantity);
+      } else {
+        clearAreaPreview();
+        return;
+      }
     }
 
     if (metrics.packageCount > 0) {
@@ -706,14 +908,15 @@
 
   function addDraftItem() {
     var selectedModel = getSelectedModel();
+    var selectedAccessory = getSelectedAccessory();
     var area = Number(areaInput.value);
     var quantity = Number(quantityInput.value);
     var quantityDisplay = "";
     var actualAreaDisplay = "";
     var totalPriceDisplay = "";
     var totalPackagesDisplay = "";
-    if (!selectedModel) {
-      errorBox.textContent = "請先選擇型號";
+    if (!selectedModel && !selectedAccessory) {
+      errorBox.textContent = "請先選擇型號或配件";
       errorBox.classList.remove("hidden");
       return;
     }
@@ -724,12 +927,23 @@
     }
 
     var metrics;
-    if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
-      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
-    } else if (!isNaN(area) && area > 0) {
-      metrics = calcItemMetrics(selectedModel, area);
+    var isModelItem = !!selectedModel;
+    if (isModelItem) {
+      if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
+        metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+      } else if (!isNaN(area) && area > 0) {
+        metrics = calcItemMetrics(selectedModel, area);
+      } else {
+        metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+      }
     } else {
-      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+      if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
+        metrics = calcAccessoryMetricsByQuantity(selectedAccessory, quantity);
+      } else if (!isNaN(area) && area > 0) {
+        metrics = calcAccessoryMetrics(selectedAccessory, area);
+      } else {
+        metrics = calcAccessoryMetricsByQuantity(selectedAccessory, quantity);
+      }
     }
 
     if (metrics.packageCount <= 0 && metrics.actualArea <= 0) {
@@ -758,23 +972,27 @@
 
     state.draftItems.push({
       no: String(state.draftItems.length + 1),
-      name: selectedModel.name || selectedModel.productName || selectedModel.model || "",
-      series: selectedModel.series || selectedModel.brand || "",
-      style: selectedModel.style || "",
-      thickness: selectedModel.thickness || "",
-      length: selectedModel.length || "",
-      width: selectedModel.width || "",
-      packageArea: selectedModel.packageArea || selectedModel.unitArea || "",
-      piecesPerPackage: selectedModel.piecesPerPackage || "",
+      name: isModelItem
+        ? selectedModel.name || selectedModel.productName || selectedModel.model || ""
+        : selectedAccessory.name || "",
+      series: isModelItem ? selectedModel.series || selectedModel.brand || "" : "配件",
+      style: isModelItem ? selectedModel.style || "" : selectedAccessory.spec || "",
+      thickness: isModelItem ? selectedModel.thickness || "" : "",
+      length: isModelItem ? selectedModel.length || "" : "",
+      width: isModelItem ? selectedModel.width || "" : "",
+      packageArea: isModelItem
+        ? selectedModel.packageArea || selectedModel.unitArea || ""
+        : selectedAccessory.rollArea || "",
+      piecesPerPackage: isModelItem ? selectedModel.piecesPerPackage || "" : "",
       totalPackages: totalPackagesDisplay,
       actualArea: actualAreaDisplay,
       totalPrice: totalPriceDisplay,
-      nameSpec:
-        selectedModel.model +
-        (selectedModel.productName ? " / " + selectedModel.productName : ""),
+      nameSpec: isModelItem
+        ? selectedModel.model + (selectedModel.productName ? " / " + selectedModel.productName : "")
+        : selectedAccessory.name + (selectedAccessory.spec ? " / " + selectedAccessory.spec : ""),
       qty: quantityDisplay,
-      unit: selectedModel.unit || "坪",
-      unitPrice: selectedModel.unitPrice || "",
+      unit: isModelItem ? selectedModel.unit || "坪" : "卷",
+      unitPrice: isModelItem ? selectedModel.unitPrice || "" : selectedAccessory.unitPrice || "",
       subtotal: totalPriceDisplay,
       remark: ""
     });
@@ -782,6 +1000,7 @@
     quantityInput.value = "";
     lastEditedMeasureField = "";
     setSelectValue(modelSelect, "");
+    setSelectValue(accessorySelect, "");
     renderDraftItems();
     clearAreaPreview();
   }
@@ -926,10 +1145,15 @@
       state.models = models;
       renderModelOptions(models);
     });
+    loadAccessories().then(function (accessories) {
+      state.accessories = accessories;
+      renderAccessoryOptions(accessories);
+    });
 
     initSelect2();
     storeSelect.addEventListener("change", applyStoreInfo);
     modelSelect.addEventListener("change", handleModelChange);
+    accessorySelect.addEventListener("change", handleAccessoryChange);
     areaInput.addEventListener("input", function () {
       lastEditedMeasureField = "area";
       syncFromAreaInput();
