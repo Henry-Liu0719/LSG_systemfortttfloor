@@ -19,6 +19,27 @@ h1 {
   margin: 0 0 16px;
 }
 
+.page-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.page-title-row h1 {
+  margin: 0;
+}
+
+.header-link {
+  color: #2563eb;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.header-link:hover {
+  color: #1d4ed8;
+}
+
 .card {
   background: #fff;
   border: 1px solid #d1d5db;
@@ -347,7 +368,7 @@ button:hover {
   }
 
   .card:first-of-type,
-  h1,
+  .page-title-row,
   #print-btn,
   #print-guide-btn,
   #print-guide-modal {
