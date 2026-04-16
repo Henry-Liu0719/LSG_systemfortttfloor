@@ -82,6 +82,10 @@
   var contactPhoneInput = document.getElementById("contact-phone");
   var modelSelect = document.getElementById("model-select");
   var areaInput = document.getElementById("area");
+  var quantityInput = document.getElementById("quantity");
+  var previewTotalPackages = document.getElementById("preview-total-packages");
+  var previewActualArea = document.getElementById("preview-actual-area");
+  var previewTotalPrice = document.getElementById("preview-total-price");
   var addItemBtn = document.getElementById("add-item-btn");
   var draftItemsBody = document.getElementById("draft-items-body");
   var errorBox = document.getElementById("form-error");
@@ -92,6 +96,7 @@
   var closePrintGuideBtn = document.getElementById("close-print-guide-btn");
   var orderCounter = 1;
   var originalDocumentTitle = document.title;
+  var lastEditedMeasureField = "";
 
   function storeLabel(store) {
     var label = store.alias;
@@ -137,6 +142,8 @@
 
     // Ensure store auto-fill works consistently under Select2 interactions.
     $(storeSelect).on("change select2:select select2:clear", applyStoreInfo);
+    // Ensure model preview updates consistently under Select2 interactions.
+    $(modelSelect).on("change select2:select select2:clear", handleModelChange);
   }
 
   function refreshSelect2(selectElement) {
@@ -492,76 +499,259 @@
     return selectedModel;
   }
 
+  function toFixedTrimmed(value, digits) {
+    if (isNaN(value)) {
+      return "";
+    }
+    var text = Number(value).toFixed(digits);
+    text = text.replace(/\.?0+$/, "");
+    return text;
+  }
+
+  function clearAreaPreview() {
+    previewTotalPackages.textContent = "--";
+    previewActualArea.textContent = "--";
+    previewTotalPrice.textContent = "--";
+  }
+
+  function getSelectedModelPackageArea(selectedModel) {
+    return Number(selectedModel ? (selectedModel.packageArea || selectedModel.unitArea) : 0);
+  }
+
+  function calcItemMetrics(selectedModel, area) {
+    var packageArea = Number(selectedModel ? (selectedModel.packageArea || selectedModel.unitArea) : 0);
+    var unitPrice = Number(selectedModel ? selectedModel.unitPrice : 0);
+    var packageCount = 0;
+    var actualArea = area;
+    var hasRemainder = false;
+    var totalPrice = 0;
+
+    if (!isNaN(packageArea) && packageArea > 0 && !isNaN(area) && area > 0) {
+      var rawPackageCount = area / packageArea;
+      packageCount = Math.ceil(rawPackageCount);
+      hasRemainder = Math.abs(rawPackageCount - Math.round(rawPackageCount)) > 0.000001;
+      actualArea = packageCount * packageArea;
+    }
+
+    if (!isNaN(unitPrice) && unitPrice > 0) {
+      if (packageCount > 0) {
+        totalPrice = packageCount * unitPrice;
+      } else if (!isNaN(area) && area > 0) {
+        totalPrice = area * unitPrice;
+      }
+    }
+
+    return {
+      packageArea: packageArea,
+      packageCount: packageCount,
+      actualArea: actualArea,
+      hasRemainder: hasRemainder,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice
+    };
+  }
+
+  function calcItemMetricsByQuantity(selectedModel, quantity) {
+    var packageArea = getSelectedModelPackageArea(selectedModel);
+    var unitPrice = Number(selectedModel ? selectedModel.unitPrice : 0);
+    var actualArea = 0;
+    var totalPrice = 0;
+    if (!isNaN(packageArea) && packageArea > 0 && !isNaN(quantity) && quantity > 0) {
+      actualArea = quantity * packageArea;
+    }
+    if (!isNaN(unitPrice) && unitPrice > 0 && !isNaN(quantity) && quantity > 0) {
+      totalPrice = quantity * unitPrice;
+    }
+    return {
+      packageArea: packageArea,
+      packageCount: quantity,
+      actualArea: actualArea,
+      hasRemainder: false,
+      unitPrice: unitPrice,
+      totalPrice: totalPrice
+    };
+  }
+
+  function syncFromAreaInput() {
+    var selectedModel = getSelectedModel();
+    var area = Number(areaInput.value);
+    var packageArea = getSelectedModelPackageArea(selectedModel);
+    if (!selectedModel || isNaN(area) || area <= 0 || isNaN(packageArea) || packageArea <= 0) {
+      if (lastEditedMeasureField === "area" || !areaInput.value) {
+        quantityInput.value = "";
+      }
+      return;
+    }
+    quantityInput.value = String(Math.ceil(area / packageArea));
+  }
+
+  function syncFromQuantityInput() {
+    var selectedModel = getSelectedModel();
+    var quantity = Number(quantityInput.value);
+    var packageArea = getSelectedModelPackageArea(selectedModel);
+    if (!selectedModel || isNaN(quantity) || quantity <= 0 || isNaN(packageArea) || packageArea <= 0) {
+      if (lastEditedMeasureField === "quantity" || !quantityInput.value) {
+        areaInput.value = "";
+      }
+      return;
+    }
+    areaInput.value = toFixedTrimmed(quantity * packageArea, 2);
+  }
+
+  function handleModelChange() {
+    if (lastEditedMeasureField === "quantity" && quantityInput.value) {
+      syncFromQuantityInput();
+    } else {
+      syncFromAreaInput();
+    }
+    updateAreaPreview();
+  }
+
+  function updateAreaPreview() {
+    var selectedModel = getSelectedModel();
+    var area = Number(areaInput.value);
+    if (!selectedModel) {
+      clearAreaPreview();
+      return;
+    }
+    var quantity = Number(quantityInput.value);
+    var metrics;
+
+    if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
+      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+    } else if (!isNaN(area) && area > 0) {
+      metrics = calcItemMetrics(selectedModel, area);
+    } else if (!isNaN(quantity) && quantity > 0) {
+      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+    } else {
+      clearAreaPreview();
+      return;
+    }
+
+    if (metrics.packageCount > 0) {
+      previewTotalPackages.textContent = String(metrics.packageCount);
+      previewActualArea.textContent = toFixedTrimmed(metrics.actualArea, 2);
+      if (metrics.unitPrice > 0) {
+        previewTotalPrice.textContent = toFixedTrimmed(metrics.totalPrice, 2);
+      } else {
+        previewTotalPrice.textContent = "--";
+      }
+      return;
+    }
+
+    previewTotalPackages.textContent = "-";
+    previewActualArea.textContent = toFixedTrimmed(metrics.actualArea, 2);
+    if (metrics.unitPrice > 0) {
+      previewTotalPrice.textContent = toFixedTrimmed(metrics.totalPrice, 2);
+    } else {
+      previewTotalPrice.textContent = "--";
+    }
+  }
+
   function renderDraftItems() {
     var html = "";
     var i;
     if (!state.draftItems.length) {
-      draftItemsBody.innerHTML = '<tr><td colspan="9">尚未添加明細</td></tr>';
+      draftItemsBody.innerHTML = '<tr><td colspan="8">尚未添加明細</td></tr>';
       return;
     }
     for (i = 0; i < state.draftItems.length; i += 1) {
       var item = state.draftItems[i];
       html += "<tr>";
-      html += "<td>" + sanitize(item.name) + "</td>";
-      html += "<td>" + sanitize(item.series) + "</td>";
-      html += "<td>" + sanitize(item.style) + "</td>";
-      html += "<td>" + sanitize(item.thickness) + "</td>";
-      html += "<td>" + sanitize(item.length) + "</td>";
-      html += "<td>" + sanitize(item.width) + "</td>";
-      html += "<td>" + sanitize(item.packageArea) + "</td>";
-      html += "<td>" + sanitize(item.piecesPerPackage) + "</td>";
+      html +=
+        '<td><button type="button" class="toggle-item-info-btn" data-index="' +
+        sanitize(String(i)) +
+        '">查看</button></td>';
       html +=
         '<td><button type="button" class="remove-item-btn" data-index="' +
         sanitize(String(i)) +
         '">刪除</button></td>';
+      html += "<td>" + sanitize(item.name) + "</td>";
+      html += "<td>" + sanitize(item.series) + "</td>";
+      html += "<td>" + sanitize(item.style) + "</td>";
+      html += "<td>" + sanitize(item.unitPrice) + "</td>";
+      html += "<td>" + sanitize(item.totalPackages) + "</td>";
+      html += "<td>" + sanitize(item.totalPrice) + "</td>";
+      html += "</tr>";
+      html += '<tr class="item-info-row hidden" data-index="' + sanitize(String(i)) + '">';
+      html += '<td colspan="8">';
+      html += '<div class="item-info-card">';
+      html += '<div class="item-info-entry"><span class="item-info-key">厚度(mm)：</span><span class="item-info-value">' + sanitize(item.thickness) + "</span></div>";
+      html += '<div class="item-info-entry"><span class="item-info-key">長(mm)：</span><span class="item-info-value">' + sanitize(item.length) + "</span></div>";
+      html += '<div class="item-info-entry"><span class="item-info-key">寬(mm)：</span><span class="item-info-value">' + sanitize(item.width) + "</span></div>";
+      html += '<div class="item-info-entry"><span class="item-info-key">實際坪數：</span><span class="item-info-value">' + sanitize(item.actualArea) + "</span></div>";
+      html += '<div class="item-info-entry"><span class="item-info-key">每包坪數：</span><span class="item-info-value">' + sanitize(item.packageArea) + "</span></div>";
+      html += '<div class="item-info-entry"><span class="item-info-key">每包片數：</span><span class="item-info-value">' + sanitize(item.piecesPerPackage) + "</span></div>";
+      html += "</div>";
+      html += "</td>";
       html += "</tr>";
     }
     draftItemsBody.innerHTML = html;
   }
 
+  function toggleDraftItemInfo(index) {
+    var infoRow = draftItemsBody.querySelector('.item-info-row[data-index="' + String(index) + '"]');
+    var toggleBtn = draftItemsBody.querySelector('.toggle-item-info-btn[data-index="' + String(index) + '"]');
+    if (!infoRow || !toggleBtn) {
+      return;
+    }
+    if (infoRow.classList.contains("hidden")) {
+      infoRow.classList.remove("hidden");
+      toggleBtn.textContent = "收合";
+    } else {
+      infoRow.classList.add("hidden");
+      toggleBtn.textContent = "查看";
+    }
+  }
+
   function addDraftItem() {
     var selectedModel = getSelectedModel();
     var area = Number(areaInput.value);
-    var unitArea = Number(selectedModel ? selectedModel.unitArea : 0);
-    var quantity = 0;
-    var hasRemainder = false;
+    var quantity = Number(quantityInput.value);
     var quantityDisplay = "";
-    var subtotalDisplay = "";
+    var actualAreaDisplay = "";
+    var totalPriceDisplay = "";
+    var totalPackagesDisplay = "";
     if (!selectedModel) {
       errorBox.textContent = "請先選擇型號";
       errorBox.classList.remove("hidden");
       return;
     }
-    if (isNaN(area) || area <= 0) {
-      errorBox.textContent = "坪數必須大於 0";
+    if ((isNaN(area) || area <= 0) && (isNaN(quantity) || quantity <= 0)) {
+      errorBox.textContent = "請輸入坪數或數量，且必須大於 0";
       errorBox.classList.remove("hidden");
       return;
     }
 
-    if (!isNaN(unitArea) && unitArea > 0) {
-      quantity = area / unitArea;
-      hasRemainder = Math.abs(quantity - Math.round(quantity)) > 0.000001;
-      quantity = Math.ceil(quantity);
-      quantityDisplay = String(quantity);
-      if (selectedModel.unitPrice && !isNaN(Number(selectedModel.unitPrice))) {
-        subtotalDisplay = String(quantity * Number(selectedModel.unitPrice));
-      }
-      if (hasRemainder) {
-        var productName = selectedModel.productName || selectedModel.model || "";
-        errorBox.textContent =
-          '品名"' +
-          productName +
-          '"總坪數無法被單位坪數整除，已自動無條件進位為 ' +
-          quantityDisplay +
-          "。";
-        errorBox.classList.remove("hidden");
-      } else {
-        errorBox.classList.add("hidden");
-      }
+    var metrics;
+    if (!isNaN(quantity) && quantity > 0 && lastEditedMeasureField === "quantity") {
+      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+    } else if (!isNaN(area) && area > 0) {
+      metrics = calcItemMetrics(selectedModel, area);
     } else {
-      quantityDisplay = areaInput.value;
-      if (selectedModel.unitPrice && !isNaN(Number(selectedModel.unitPrice))) {
-        subtotalDisplay = String(Number(areaInput.value) * Number(selectedModel.unitPrice));
+      metrics = calcItemMetricsByQuantity(selectedModel, quantity);
+    }
+
+    if (metrics.packageCount <= 0 && metrics.actualArea <= 0) {
+      errorBox.textContent = "無法依目前型號換算數量或坪數";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+
+    if (metrics.packageCount > 0) {
+      quantityDisplay = String(metrics.packageCount);
+      totalPackagesDisplay = String(metrics.packageCount);
+      actualAreaDisplay = toFixedTrimmed(metrics.actualArea, 2);
+      if (metrics.unitPrice > 0) {
+        totalPriceDisplay = toFixedTrimmed(metrics.totalPrice, 2);
+      }
+      errorBox.classList.add("hidden");
+    } else {
+      quantityDisplay = toFixedTrimmed(area, 2);
+      totalPackagesDisplay = "-";
+      actualAreaDisplay = toFixedTrimmed(area, 2);
+      if (metrics.unitPrice > 0) {
+        totalPriceDisplay = toFixedTrimmed(metrics.totalPrice, 2);
       }
       errorBox.classList.add("hidden");
     }
@@ -576,18 +766,24 @@
       width: selectedModel.width || "",
       packageArea: selectedModel.packageArea || selectedModel.unitArea || "",
       piecesPerPackage: selectedModel.piecesPerPackage || "",
+      totalPackages: totalPackagesDisplay,
+      actualArea: actualAreaDisplay,
+      totalPrice: totalPriceDisplay,
       nameSpec:
         selectedModel.model +
         (selectedModel.productName ? " / " + selectedModel.productName : ""),
       qty: quantityDisplay,
       unit: selectedModel.unit || "坪",
       unitPrice: selectedModel.unitPrice || "",
-      subtotal: subtotalDisplay,
+      subtotal: totalPriceDisplay,
       remark: ""
     });
     areaInput.value = "";
+    quantityInput.value = "";
+    lastEditedMeasureField = "";
     setSelectValue(modelSelect, "");
     renderDraftItems();
+    clearAreaPreview();
   }
 
   function removeDraftItem(index) {
@@ -733,9 +929,34 @@
 
     initSelect2();
     storeSelect.addEventListener("change", applyStoreInfo);
+    modelSelect.addEventListener("change", handleModelChange);
+    areaInput.addEventListener("input", function () {
+      lastEditedMeasureField = "area";
+      syncFromAreaInput();
+      updateAreaPreview();
+    });
+    areaInput.addEventListener("change", function () {
+      lastEditedMeasureField = "area";
+      syncFromAreaInput();
+      updateAreaPreview();
+    });
+    quantityInput.addEventListener("input", function () {
+      lastEditedMeasureField = "quantity";
+      syncFromQuantityInput();
+      updateAreaPreview();
+    });
+    quantityInput.addEventListener("change", function () {
+      lastEditedMeasureField = "quantity";
+      syncFromQuantityInput();
+      updateAreaPreview();
+    });
     addItemBtn.addEventListener("click", addDraftItem);
     draftItemsBody.addEventListener("click", function (event) {
       var target = event.target;
+      if (target && target.className.indexOf("toggle-item-info-btn") > -1) {
+        toggleDraftItemInfo(Number(target.getAttribute("data-index")));
+        return;
+      }
       if (target && target.className.indexOf("remove-item-btn") > -1) {
         removeDraftItem(Number(target.getAttribute("data-index")));
       }

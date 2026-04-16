@@ -76,31 +76,49 @@
 
             <label>
               坪數
-              <input id="area" name="area" type="number" min="0.01" step="0.01" required />
+              <input id="area" name="area" type="number" min="0.01" step="0.01" />
             </label>
+
+            <label>
+              數量
+              <input id="quantity" name="quantity" type="number" min="1" step="1" placeholder="可輸入包數" />
+            </label>
+            <div id="area-preview" class="col-2 area-preview-cards">
+              <div class="area-preview-card">
+                <span class="area-preview-label">總包數：</span>
+                <strong id="preview-total-packages">--</strong>
+              </div>
+              <div class="area-preview-card">
+                <span class="area-preview-label">實際總坪數：</span>
+                <strong id="preview-actual-area">--</strong>
+              </div>
+              <div class="area-preview-card">
+                <span class="area-preview-label">總價：</span>
+                <strong id="preview-total-price">--</strong>
+              </div>
+            </div>
 
             <div class="col-2 line-item-actions">
               <button id="add-item-btn" type="button">添加</button>
             </div>
 
-            <div class="col-2">
+            <div class="col-2 draft-table-wrap">
               <table class="draft-table">
                 <thead>
                   <tr>
+                    <th>資訊</th>
+                    <th>操作</th>
                     <th>名稱</th>
                     <th>系列</th>
                     <th>款式</th>
-                    <th>厚度(mm)</th>
-                    <th>長(mm)</th>
-                    <th>寬(mm)</th>
-                    <th>每包坪數</th>
-                    <th>每包片數</th>
-                    <th>操作</th>
+                    <th>單價</th>
+                    <th>總包數</th>
+                    <th>總價</th>
                   </tr>
                 </thead>
                 <tbody id="draft-items-body">
                   <tr>
-                    <td colspan="9">尚未添加明細</td>
+                    <td colspan="8">尚未添加明細</td>
                   </tr>
                 </tbody>
               </table>
