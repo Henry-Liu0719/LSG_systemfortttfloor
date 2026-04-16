@@ -102,9 +102,9 @@
   }
 
   function modelLabel(model) {
-    var productLabel = model.productName || model.model;
-    var unitAreaLabel = model.unitArea || "-";
-    return productLabel + "(" + unitAreaLabel + ")";
+    var nameLabel = model.name || model.productName || model.model;
+    var packageAreaLabel = model.packageArea || model.unitArea || "-";
+    return nameLabel + "(" + packageAreaLabel + ")";
   }
 
   function getJquery() {
@@ -237,13 +237,21 @@
     var i;
     for (i = 0; i < rows.length; i += 1) {
       var row = rows[i] || {};
-      var model = row["型號"] || row.model || "";
-      var productName = row["品名"] || row["產品名稱"] || row.productName || "";
+      var model = row["型號"] || row.model || row["名稱"] || "";
+      var productName = row["品名"] || row["產品名稱"] || row.productName || row["名稱"] || "";
       var brand = row["品牌"] || row.brand || "";
       var unitArea = row["一箱坪數"] || row["單位面積(坪)"] || row.unitArea || "";
       var unit = row["單位"] || row.unit || "坪";
       var unitPrice = row["單價"] || row["單價(TWD)"] || row.unitPrice || "";
-      if (!model) {
+      var name = row["名稱"] || row["品名"] || row["產品名稱"] || row.productName || model;
+      var series = row["系列"] || row.series || "";
+      var style = row["款式"] || row["樣式"] || row.style || "";
+      var thickness = row["厚度(mm)"] || row["厚度"] || row.thickness || "";
+      var length = row["長(mm)"] || row["長度(mm)"] || row["長度"] || row.length || "";
+      var width = row["寬(mm)"] || row["寬度(mm)"] || row["寬度"] || row.width || "";
+      var packageArea = row["每包坪數"] || row["每包/坪數"] || row.packageArea || unitArea;
+      var piecesPerPackage = row["每包片數"] || row["每包/片數"] || row.piecesPerPackage || "";
+      if (!model && !name) {
         continue;
       }
       normalized.push({
@@ -253,7 +261,15 @@
         brand: brand,
         unitArea: unitArea,
         unit: unit,
-        unitPrice: unitPrice
+        unitPrice: unitPrice,
+        name: name,
+        series: series,
+        style: style,
+        thickness: thickness,
+        length: length,
+        width: width,
+        packageArea: packageArea,
+        piecesPerPackage: piecesPerPackage
       });
     }
     return normalized;
@@ -480,16 +496,20 @@
     var html = "";
     var i;
     if (!state.draftItems.length) {
-      draftItemsBody.innerHTML = '<tr><td colspan="5">尚未添加明細</td></tr>';
+      draftItemsBody.innerHTML = '<tr><td colspan="9">尚未添加明細</td></tr>';
       return;
     }
     for (i = 0; i < state.draftItems.length; i += 1) {
       var item = state.draftItems[i];
       html += "<tr>";
-      html += "<td>" + sanitize(String(i + 1)) + "</td>";
-      html += "<td>" + sanitize(item.nameSpec) + "</td>";
-      html += "<td>" + sanitize(item.qty) + "</td>";
-      html += "<td>" + sanitize(item.unit) + "</td>";
+      html += "<td>" + sanitize(item.name) + "</td>";
+      html += "<td>" + sanitize(item.series) + "</td>";
+      html += "<td>" + sanitize(item.style) + "</td>";
+      html += "<td>" + sanitize(item.thickness) + "</td>";
+      html += "<td>" + sanitize(item.length) + "</td>";
+      html += "<td>" + sanitize(item.width) + "</td>";
+      html += "<td>" + sanitize(item.packageArea) + "</td>";
+      html += "<td>" + sanitize(item.piecesPerPackage) + "</td>";
       html +=
         '<td><button type="button" class="remove-item-btn" data-index="' +
         sanitize(String(i)) +
@@ -548,6 +568,14 @@
 
     state.draftItems.push({
       no: String(state.draftItems.length + 1),
+      name: selectedModel.name || selectedModel.productName || selectedModel.model || "",
+      series: selectedModel.series || selectedModel.brand || "",
+      style: selectedModel.style || "",
+      thickness: selectedModel.thickness || "",
+      length: selectedModel.length || "",
+      width: selectedModel.width || "",
+      packageArea: selectedModel.packageArea || selectedModel.unitArea || "",
+      piecesPerPackage: selectedModel.piecesPerPackage || "",
       nameSpec:
         selectedModel.model +
         (selectedModel.productName ? " / " + selectedModel.productName : ""),
